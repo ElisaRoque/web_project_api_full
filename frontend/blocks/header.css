@@ -1,0 +1,58 @@
+.header {
+  min-height: 120px;
+  font-family: "Inter", Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(84, 84, 84, 0.7);
+  justify-content: space-between;
+}
+
+.header__logo {
+  width: 173px;
+  height: 33px;
+  object-fit: contain;
+}
+
+.header__user {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header__user span,
+.header__user button,
+.header__auth-link,
+.header__auth-current {
+  font-family: "Inter", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #fff;
+}
+
+.header__user button {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.header__auth-link,
+.header__auth-current {
+  text-decoration: none;
+}
+
+.header__auth-link:hover {
+  opacity: 0.7;
+}
+
+@media screen and (max-width: 544px) {
+  .header {
+    min-height: 85px;
+  }
+
+  .header__logo {
+    width: 126px;
+    height: 24px;
+    margin: 0 0 0 7px;
+  }
+}
