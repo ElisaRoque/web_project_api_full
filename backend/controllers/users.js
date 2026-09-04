@@ -1,78 +1,68 @@
-const userModel = require("../models/user");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const userModel = require('../models/user');
+const NotFoundError = require('../errors/not-found-err');
+const BadRequestError = require('../errors/bad-request-err');
+const UnauthorizedError = require('../errors/unauthorized-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   userModel
     .find({})
     .then((users) => res.send(users))
-    .catch(() => res.status(500).send({ message: "Erro no servidor" }));
+    .catch(next);
 };
 
-module.exports.getUserById = (req, res) => {
-  userModel
+module.exports.getUserById = (req, res, next) => {
+  const { userId } = req.params;
+
+  if (userId !== req.user._id) {
+    return next(new ForbiddenError('Acesso negado'));
+  }
+
+  return userModel
     .findById(req.params.userId)
-    .orFail()
     .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Usuário não encontrado');
+      }
+
       return res.send(user);
     })
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Usuário não encontrado",
-        });
-      }
-      if (err.name === "CastError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Recurso não encontrado",
-        });
-      }
-
-      return res.status(500).send({
-        message: "Erro no servidor",
-      });
+      return next(err);
     });
 };
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  userModel
-    .create({
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => userModel.create({
       name,
       about,
       avatar,
-    })
+      email,
+      password: hash,
+    }))
     .then((user) => res.status(201).send(user))
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
-      }
-      if (err.name === "CastError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Recurso não encontrado",
-        });
-      }
-
-      return res.status(500).send({
-        message: "Erro no servidor",
-      });
+      return next(err);
     });
 };
 
-module.exports.updateProfile = (req, res) => {
+module.exports.updateProfile = (req, res, next) => {
   const { name, about } = req.body;
 
   userModel
@@ -84,22 +74,23 @@ module.exports.updateProfile = (req, res) => {
         runValidators: true,
       },
     )
-    .orFail()
-    .then((user) => res.send(user))
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Usuário não encontrado');
+      }
+
+      res.send(user);
+    })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return res.status(400).send({ message: "Dados inválidos" });
+      if (err.name === 'ValidationError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({ message: "Usuário não encontrado" });
-      }
-
-      return res.status(500).send({ message: "Erro no servidor" });
+      return next(err);
     });
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   userModel
@@ -111,17 +102,57 @@ module.exports.updateAvatar = (req, res) => {
         runValidators: true,
       },
     )
-    .orFail()
-    .then((user) => res.send(user))
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Usuário não encontrado');
+      }
+
+      res.send(user);
+    })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return res.status(400).send({ message: "Dados inválidos" });
+      if (err.name === 'ValidationError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({ message: "Usuário não encontrado" });
-      }
-
-      return res.status(500).send({ message: "Erro no servidor" });
+      return next(err);
     });
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+
+  return userModel
+    .findOne({ email })
+    .select('+password')
+    .then((user) => {
+      if (!user) {
+        throw new UnauthorizedError('E-mail ou senha incorretos');
+      }
+
+      return bcrypt.compare(password, user.password).then((matched) => {
+        if (!matched) {
+          throw new UnauthorizedError('E-mail ou senha incorretos');
+        }
+
+        const token = jwt.sign({ _id: user._id }, 'super-secret-key', {
+          expiresIn: '7d',
+        });
+
+        return res.send({ token });
+      });
+    })
+    .catch(next);
+};
+
+module.exports.getCurrentUser = (req, res, next) => {
+  userModel
+    .findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Usuário não encontrado');
+      }
+
+      res.send(user);
+    })
+    .catch(next);
 };

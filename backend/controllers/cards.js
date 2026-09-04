@@ -1,14 +1,15 @@
-const Card = require("../models/card");
+const Card = require('../models/card');
+const BadRequestError = require('../errors/bad-request-err');
+const NotFoundError = require('../errors/not-found-err');
+const ForbiddenError = require('../errors/forbidden-err');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send(cards))
-    .catch((err) => {
-      res.status(500).send({ message: err.message });
-    });
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   Card.create({
@@ -16,60 +17,40 @@ module.exports.createCard = (req, res) => {
     link,
     owner: req.user._id,
   })
-    .then((card) => res.send(card))
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
-      }
-      if (err.name === "CastError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Recurso não encontrado",
-        });
-      }
-
-      return res.status(500).send({
-        message: "Erro no servidor",
-      });
+      return next(err);
     });
 };
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndDelete(req.params.cardId)
-    .orFail()
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Cartão não encontrado');
+      }
+
+      if (card.owner.toString() !== req.user._id) {
+        throw new ForbiddenError('Acesso negado');
+      }
+
+      return Card.findByIdAndDelete(req.params.cardId);
+    })
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Cartão não encontrado",
-        });
-      }
-      if (err.name === "CastError") {
-        return res.status(400).send({
-          message: "Dados inválidos",
-        });
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({
-          message: "Recurso não encontrado",
-        });
-      }
-
-      return res.status(500).send({
-        message: "Erro no servidor",
-      });
+      return next(err);
     });
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     {
@@ -81,22 +62,23 @@ module.exports.likeCard = (req, res) => {
       new: true,
     },
   )
-    .orFail()
-    .then((card) => res.send(card))
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Cartão não encontrado');
+      }
+
+      res.send(card);
+    })
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({ message: "Cartão não encontrado" });
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "CastError") {
-        return res.status(400).send({ message: "Dados inválidos" });
-      }
-
-      return res.status(500).send({ message: "Erro no servidor" });
+      return next(err);
     });
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     {
@@ -108,17 +90,18 @@ module.exports.dislikeCard = (req, res) => {
       new: true,
     },
   )
-    .orFail()
-    .then((card) => res.send(card))
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Cartão não encontrado');
+      }
+
+      res.send(card);
+    })
     .catch((err) => {
-      if (err.name === "DocumentNotFoundError") {
-        return res.status(404).send({ message: "Cartão não encontrado" });
+      if (err.name === 'CastError') {
+        return next(new BadRequestError('Dados inválidos'));
       }
 
-      if (err.name === "CastError") {
-        return res.status(400).send({ message: "Dados inválidos" });
-      }
-
-      return res.status(500).send({ message: "Erro no servidor" });
+      return next(err);
     });
 };

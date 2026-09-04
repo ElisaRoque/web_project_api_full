@@ -1,7 +1,12 @@
 import ImagePopup from "../Popup/imagePopup/ImagePopup";
+import { useContext } from "react";
+import CurrentUserContext from "../../../../contexts/CurrentUserContext";
 
 export default function Card(props) {
-  const { name, link, isLiked } = props.card;
+  const { name, link } = props.card;
+  const { currentUser } = useContext(CurrentUserContext);
+
+  const isLiked = props.card.likes.includes(currentUser._id);
 
   const imageComponent = {
     title: "",

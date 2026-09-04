@@ -1,7 +1,15 @@
+import { getToken } from "./token";
+
 export class Api {
-  constructor({ baseUrl, headers }) {
+  constructor({ baseUrl }) {
     this._baseUrl = baseUrl;
-    this._headers = headers;
+  }
+
+  _getHeaders() {
+    return {
+      Authorization: `Bearer ${getToken()}`,
+      "Content-Type": "application/json",
+    };
   }
 
   _handleResponse(res) {
@@ -14,13 +22,13 @@ export class Api {
 
   getUserInfo() {
     return fetch(`${this._baseUrl}/users/me`, {
-      headers: this._headers,
+      headers: this._getHeaders(),
     }).then(this._handleResponse);
   }
 
   getInitialCards() {
     return fetch(`${this._baseUrl}/cards/`, {
-      headers: this._headers,
+      headers: this._getHeaders(),
     }).then(this._handleResponse);
   }
 
@@ -31,7 +39,7 @@ export class Api {
   setUserInfo(data) {
     return fetch(`${this._baseUrl}/users/me`, {
       method: "PATCH",
-      headers: this._headers,
+      headers: this._getHeaders(),
       body: JSON.stringify({
         name: data.name,
         about: data.about,
@@ -42,7 +50,7 @@ export class Api {
   setNewCard(name, link) {
     return fetch(`${this._baseUrl}/cards`, {
       method: "POST",
-      headers: this._headers,
+      headers: this._getHeaders(),
       body: JSON.stringify({
         name,
         link,
@@ -53,28 +61,28 @@ export class Api {
   deleteCard(id) {
     return fetch(`${this._baseUrl}/cards/${id}`, {
       method: "DELETE",
-      headers: this._headers,
+      headers: this._getHeaders(),
     }).then(this._handleResponse);
   }
 
   addLike(cardId) {
     return fetch(`${this._baseUrl}/cards/${cardId}/likes`, {
       method: "PUT",
-      headers: this._headers,
+      headers: this._getHeaders(),
     }).then(this._handleResponse);
   }
 
   removeLike(cardId) {
     return fetch(`${this._baseUrl}/cards/${cardId}/likes`, {
       method: "DELETE",
-      headers: this._headers,
+      headers: this._getHeaders(),
     }).then(this._handleResponse);
   }
 
   updateAvatar(avatarLink) {
     return fetch(`${this._baseUrl}/users/me/avatar`, {
       method: "PATCH",
-      headers: this._headers,
+      headers: this._getHeaders(),
       body: JSON.stringify({
         avatar: avatarLink,
       }),
@@ -83,9 +91,9 @@ export class Api {
 }
 
 export const api = new Api({
-  baseUrl: "https://around-api.pt-br.tripleten-services.com/v1",
+  baseUrl: "https://api.go.zef.ro",
   headers: {
-    authorization: "0e02cfab-0e26-4b28-9472-ddccc62ea186",
+    Authorization: `Bearer ${getToken()}`,
     "Content-Type": "application/json",
   },
 });

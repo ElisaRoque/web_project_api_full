@@ -82,17 +82,16 @@ function App() {
   }
 
   useEffect(() => {
-    const token = getToken();
+    const storedToken = getToken();
 
-    if (!token) {
+    if (!storedToken) {
       return;
     }
 
     auth
-      .checkToken(token)
+      .checkToken(storedToken)
       .then((data) => {
         setCurrentUser(data.data ?? data);
-
         setLoggedIn(true);
       })
       .catch(() => {
@@ -135,9 +134,9 @@ function App() {
   };
 
   function handleCardLike(card) {
-    const request = card.isLiked
-      ? api.removeLike(card._id)
-      : api.addLike(card._id);
+    const isLiked = card.likes.includes(currentUser._id);
+
+    const request = isLiked ? api.removeLike(card._id) : api.addLike(card._id);
 
     request
       .then((newCard) => {

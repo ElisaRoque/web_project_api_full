@@ -27,7 +27,6 @@ const Login = ({ handleLogin }) => {
       <form className="login__form" onSubmit={handleSubmit}>
         <input
           id="email"
-          required
           name="email"
           placeholder="E-mail"
           type="text"
@@ -39,7 +38,6 @@ const Login = ({ handleLogin }) => {
         <label htmlFor="password">Senha:</label>
         <input
           id="password"
-          required
           name="password"
           placeholder="Senha"
           type="password"
