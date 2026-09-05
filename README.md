@@ -53,3 +53,8 @@ npm run start
 cd frontend
 npm install
 npm run dev
+
+## Deploy
+
+- Front-end: https://go.zef.ro
+- Back-end: https://api.go.zef.ro

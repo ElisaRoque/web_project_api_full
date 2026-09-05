@@ -68,7 +68,12 @@ function App() {
         setLoggedIn(true);
         navigate("/");
       })
-      .catch(console.error);
+      .catch(() => {
+        setInfoTooltip({
+          isSuccess: false,
+          message: "Ops! E-mail ou senha incorretos. Tente novamente.",
+        });
+      });
   }
 
   function handleLogout() {
