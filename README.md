@@ -56,4 +56,5 @@ npm run dev
 
 ## Deploy
 
-https://go.zef.ro
+- Front-end: https://go.zef.ro
+- Back-end: https://api.go.zef.ro
